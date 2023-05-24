@@ -5,24 +5,25 @@ from pathlib import Path
 from multiprocessing import Process, Queue
 from plyfile import PlyElement, PlyData
 
+from adaptive_sfm.feature import *
 from adaptive_sfm.stream import image_stream, video_stream
 
 
-# def run(cfg, network, imagedir, calib, stride=1, skip=0, viz=False, timeit=False, save_reconstruction=False):
-def run(imagedir, calib, stride=1, skip=0):
+# def run(cfg, network, image_dir, calib, stride=1, skip=0, viz=False, timeit=False, save_reconstruction=False):
+def run(image_dir, calib, stride=1, skip=0):
     queue = Queue(maxsize=8)
 
-    if os.path.isdir(imagedir):
-        reader = Process(target=image_stream, args=(queue, imagedir, calib, stride, skip))
+    if os.path.isdir(image_dir):
+        reader = Process(target=image_stream, args=(queue, image_dir, calib, stride, skip))
     else:
-        reader = Process(target=video_stream, args=(queue, imagedir, calib, stride, skip))
+        reader = Process(target=video_stream, args=(queue, image_dir, calib, stride, skip))
 
 
 if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--imagedir', type=str)
+    parser.add_argument('--image_dir', type=str)
     parser.add_argument('--calib', type=str)
     parser.add_argument('--stride', type=int, default=2)
     parser.add_argument('--skip', type=int, default=0)
@@ -38,10 +39,10 @@ if __name__ == '__main__':
     # cfg.merge_from_file(args.config)
     # cfg.BUFFER_SIZE = args.buffer
 
-    print("Running with config...")
+    # print("Running with config...")
     # print(cfg)
 
-    run(args.imagedir, args.calib, args.stride, args.skip)
+    run(args.image_dir, args.calib, args.stride, args.skip)
 
     # pred_traj = run(cfg, args.network, args.imagedir, args.calib, args.stride, args.skip, args.viz, args.timeit, args.save_reconstruction)
     # name = Path(args.imagedir).stem
