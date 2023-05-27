@@ -2,7 +2,7 @@ import cv2
 import time
 import logging
 import numpy as np
-from typing import Any, Tuple, Dict, Optional
+from typing import Any, List, Tuple, Dict, Optional
 
 logger: logging.Logger = logging.getLogger(__name__)
 
