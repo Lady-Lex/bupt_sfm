@@ -15,23 +15,26 @@ class Initializer:
         # 1. 选取最大权重的边
         max_weight_edge, max_weight = feature_graph.get_max_weight_edge()
 
-        assert max_weight_edge.node_id1.intrinsics == max_weight_edge.node_id2.intrinsics
+        node_1 = feature_graph.get_node(max_weight_edge.node_id1)
+        node_2 = feature_graph.get_node(max_weight_edge.node_id2)
 
-        K = max_weight_edge.node_id1.intrinsics
+        assert (node_1.intrinsics == node_2.intrinsics).all()
+
+        K = node_1.intrinsics
         # 2. 初始三角化
         I0 = np.array([[1, 0, 0, 0],
                        [0, 1, 0, 0],
                        [0, 0, 1, 0]])
-        camera_poses = np.array(I0.ravel())
+        # camera_poses = np.array(I0.ravel())
         P0 = np.matmul(K, I0)
-        feature_graph.get_node(max_weight_edge.node_id1).pose = P0
+        node_1.pose = P0
 
         E = feature_graph.get_edge(max_weight_edge.node_id1, max_weight_edge.node_id2).EssentialMatrix
         _, R, t, mask = cv2.recoverPose(E, max_weight_edge.feature1.points, max_weight_edge.feature2.points, K)
         t = t.reshape(3, 1)
         Rt = np.hstack((R, t))
         P1 = np.matmul(K, Rt)
-        feature_graph.get_node(max_weight_edge.node_id2).pose = P1
+        node_2.pose = P1
 
         cloud = cv2.triangulatePoints(P0, P1,  max_weight_edge.feature1.points.T,  max_weight_edge.feature2.points.T).T
         cloud = cv2.convertPointsFromHomogeneous(cloud)[:, 0, :]

@@ -55,7 +55,15 @@ class CoFeaturesGraph(nx.Graph):
         return self._nodes[node_id]
 
     def get_edge(self, node_id1, node_id2):
-        return self._edges[(node_id1, node_id2)]
+        if node_id1 > node_id2:
+            temp_node_id1 = node_id2
+            temp_node_id2 = node_id1
+        elif node_id1 < node_id2:
+            temp_node_id1 = node_id1
+            temp_node_id2 = node_id2
+        else:
+            raise ValueError("node_id1 should be different from node_id2")
+        return self._edges[(temp_node_id1, temp_node_id2)]
 
     def get_nodes(self):
         return self._nodes
@@ -66,13 +74,17 @@ class CoFeaturesGraph(nx.Graph):
     def get_max_weight_edge(self):
         return self.max_weight_edge, self.max_weight
 
-    def all_neighbors(self, node_ids: int) -> Tuple[List[int], List[Tuple[int, int]]]:
+    def all_neighbors(self, node_ids: int, sort=True) -> Tuple[List[int], List[Tuple[int, int]]]:
         neighbor_nodes = set()
-        neighbor_edges = []
+        neighbor_edges = set()
         for node_id in node_ids:
             for neighbor_id in self.neighbors(node_id):
                 neighbor_nodes.add(neighbor_id)
-                neighbor_edges.append((node_id, neighbor_id))
+                neighbor_edges.add(self.get_edge(node_id, neighbor_id))
+        
+        neighbor_edges = list(neighbor_edges)
+        if sort:
+            neighbor_edges = sorted(neighbor_edges, key=lambda x: x.weight)
 
         return list(neighbor_nodes), neighbor_edges
 
@@ -83,7 +95,7 @@ class CoFeaturesGraph(nx.Graph):
         super(CoFeaturesGraph, self).remove_edge(node_id1, node_id2)
 
     def draw(self):
-        nx.draw(self)
+        nx.draw(self, with_labels=True)
         plt.show()
 
 

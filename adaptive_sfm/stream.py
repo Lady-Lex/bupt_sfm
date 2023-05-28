@@ -20,7 +20,6 @@ def image_stream(queue, imagedir, calib, stride, skip=0):
 
     img_exts = ["*.png", "*.jpeg", "*.jpg"]
     image_list = sorted(chain.from_iterable(Path(imagedir).glob(e) for e in img_exts))[skip::stride]
-
     for t, imfile in enumerate(image_list):
         image = cv2.imread(str(imfile))
         if len(calib) > 4:
@@ -29,15 +28,13 @@ def image_stream(queue, imagedir, calib, stride, skip=0):
         if 0:
             image = cv2.resize(image, None, fx=0.5, fy=0.5)
             intrinsics = np.array([fx / 2, fy / 2, cx / 2, cy / 2])
-
         else:
-            intrinsics = np.array([fx, fy, cx, cy])
+            intrinsics = K
 
         h, w, _ = image.shape
         image = image[:h - h % 16, :w - w % 16]
 
         queue.put((t, image, intrinsics))
-
     queue.put((-1, image, intrinsics))
 
 

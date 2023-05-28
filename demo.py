@@ -5,9 +5,11 @@ from pathlib import Path
 from multiprocessing import Process, Queue
 from plyfile import PlyElement, PlyData
 
-from adaptive_sfm.feature import *
+from adaptive_sfm.sfm_main import *
 from adaptive_sfm.stream import image_stream, video_stream
 
+
+debug = True
 
 # def run(cfg, network, image_dir, calib, stride=1, skip=0, viz=False, timeit=False, save_reconstruction=False):
 def run(image_dir, calib, stride=1, skip=0):
@@ -18,6 +20,12 @@ def run(image_dir, calib, stride=1, skip=0):
     else:
         reader = Process(target=video_stream, args=(queue, image_dir, calib, stride, skip))
 
+    reader.start()
+
+    sfm_runner(queue)
+    
+    reader.join()
+
 
 if __name__ == '__main__':
     import argparse
@@ -25,8 +33,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--image_dir', type=str)
     parser.add_argument('--calib', type=str)
-    parser.add_argument('--stride', type=int, default=2)
+    parser.add_argument('--stride', type=int, default=1)
     parser.add_argument('--skip', type=int, default=0)
+    # parser.add_argument('--plot', action="store_true")
     # parser.add_argument('--buffer', type=int, default=2048)
     # parser.add_argument('--config', default="config/default.yaml")
     # parser.add_argument('--timeit', action='store_true')

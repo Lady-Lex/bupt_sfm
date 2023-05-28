@@ -4,6 +4,8 @@ import logging
 import numpy as np
 from typing import Any, List, Tuple, Dict, Optional
 
+from adaptive_sfm.config import default_config
+
 logger: logging.Logger = logging.getLogger(__name__)
 
 
@@ -88,7 +90,6 @@ def extract_features(
         image_gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
     else:
         image_gray = image
-    feature_type = config["feature_type"].upper()
     points, desc = extract_features_sift(image_gray, config, features_count)
 
     xs = points[:, 0].round().astype(int)
@@ -107,7 +108,7 @@ def extract_features_sift(
     sift_edge_threshold = config["sift_edge_threshold"]
     sift_peak_threshold = float(config["sift_peak_threshold"])
     try:
-        detector = cv2.xfeatures2d.SIFT_create(
+        detector = cv2.SIFT_create(
             edgeThreshold=sift_edge_threshold, contrastThreshold=sift_peak_threshold
         )
     except AttributeError as ae:
@@ -121,7 +122,7 @@ def extract_features_sift(
     while True:
         logger.debug("Computing sift with threshold {0}".format(sift_peak_threshold))
         t = time.time()
-        detector = cv2.xfeatures2d.SIFT_create(
+        detector = cv2.SIFT_create(
             edgeThreshold=sift_edge_threshold, contrastThreshold=sift_peak_threshold
         )
 
@@ -138,7 +139,8 @@ def extract_features_sift(
     if desc is not None:
         if config["feature_root"]:
             desc = root_feature(desc)
-        points = np.array([(i.pt[0], i.pt[1], i.size, i.angle) for i in points])
+        # points = np.array([(i.pt[0], i.pt[1], i.size, i.angle) for i in points])
+        points = np.array([(i.pt[0], i.pt[1]) for i in points])
     else:
         points = np.array(np.zeros((0, 3)))
         desc = np.array(np.zeros((0, 3)))
@@ -146,7 +148,7 @@ def extract_features_sift(
 
 
 class SIFTmatcher:
-    config: Dict[str, Any]
+    config: Dict[str, Any] = default_config()
     matcher = cv2.BFMatcher()
 
     @classmethod
@@ -163,8 +165,8 @@ class SIFTmatcher:
             if m.distance < 0.7 * n.distance:
                 good.append(m)
 
-        point0 = np.float32([feature1.points[m.queryIdx].pt for m in good])
-        point1 = np.float32([feature2.points[m.trainIdx].pt for m in good])
+        point0 = np.float32([feature1.points[m.queryIdx] for m in good])
+        point1 = np.float32([feature2.points[m.trainIdx] for m in good])
         descriptor0 = np.float32([feature1.descriptors[m.queryIdx] for m in good])
         descriptor1 = np.float32([feature2.descriptors[m.trainIdx] for m in good])
         color0 = np.float32([feature1.colors[m.queryIdx] for m in good])
@@ -173,10 +175,11 @@ class SIFTmatcher:
         return FeaturesData(point0, descriptor0, color0), FeaturesData(point1, descriptor1, color1)
 
     @classmethod
-    def search_by_Initialization(cls, feature1: FeaturesData, feature2: FeaturesData, K: np.ndarray) \
+    def search_by_Initialization(cls, image1: np.ndarray, image2: np.ndarray, K: np.ndarray) \
             -> Tuple[FeaturesData, FeaturesData, np.ndarray]:
-        feature1, feature2 = cls.match_by_features(feature1, feature2)
-        # 或者计算基础矩阵
+        feature1, feature2 = cls.match_by_images(image1, image2)
+        print("feature1.points num:", feature1.points.shape[0])
+        print("feature2.points num:", feature2.points.shape[0])
         E, mask = cv2.findEssentialMat(feature1.points, feature2.points, K, method=cv2.RANSAC, prob=0.999, threshold=1,
                                        mask=None)
         feature1.mask(mask)

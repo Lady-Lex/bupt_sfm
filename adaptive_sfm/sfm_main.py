@@ -8,7 +8,7 @@ from .graph import _co_features_graph
 
 class sfm_runner(object):
     def __init__(self, queue):
-        self.queue = copy.deepcopy(queue)
+        self.queue = queue
         self.run()
 
     def run(self):
@@ -20,6 +20,8 @@ class sfm_runner(object):
             # 向共特征点图中添加节点
             _co_features_graph.add_node(t, image, intrinsics)
 
+        print("共特征点图中的节点数量：", len(_co_features_graph.get_nodes()))
+        
         # 从共特征点图中获取节点
         image_nodes = _co_features_graph.get_nodes()
         for node_id1, image1 in image_nodes.items():
@@ -27,7 +29,7 @@ class sfm_runner(object):
                 if node_id1 >= node_id2:
                     continue
                 # 计算两个节点的共视特征点
-                feature1, feature2, E = SIFTmatcher.search_by_Initialization(image1, image2, intrinsics)
+                feature1, feature2, E = SIFTmatcher.search_by_Initialization(image1.image, image2.image, intrinsics)
                 weight = len(feature1.points)
                 # 参数：如果共视特征点数量小于100，则跳过
                 if weight < 100:
@@ -35,8 +37,11 @@ class sfm_runner(object):
                 # 向共特征点图中添加边
                 _co_features_graph.add_edge(node_id1, node_id2, feature1, feature2, weight, E)
 
+        # 可视化共特征点图
+        # _co_features_graph.draw()
+        
         # 增量式重建
-        # incremental_reconstruction()
+        incremental_reconstruction()
 
     def reset(self):
         pass
