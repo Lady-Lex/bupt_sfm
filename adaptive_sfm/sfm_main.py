@@ -1,9 +1,11 @@
 import sys
 import copy
+from tqdm import tqdm
 
+from .utils import *
 from .feature import *
 from .reconstruction import incremental_reconstruction
-from .graph import _co_features_graph
+from .graph import _co_features_graph, _covisibility_graph
 
 
 class sfm_runner(object):
@@ -17,14 +19,13 @@ class sfm_runner(object):
             if t < 0:
                 break
 
-            # 向共特征点图中添加节点
+            # 向共特征点图和共视关系图中添加节点
             _co_features_graph.add_node(t, image, intrinsics)
-
-        print("共特征点图中的节点数量：", len(_co_features_graph.get_nodes()))
+            _covisibility_graph.add_node(t, image, intrinsics)
         
         # 从共特征点图中获取节点
         image_nodes = _co_features_graph.get_nodes()
-        for node_id1, image1 in image_nodes.items():
+        for node_id1, image1 in tqdm(image_nodes.items()):
             for node_id2, image2 in image_nodes.items():
                 if node_id1 >= node_id2:
                     continue
@@ -41,7 +42,8 @@ class sfm_runner(object):
         # _co_features_graph.draw()
         
         # 增量式重建
-        incremental_reconstruction()
+        total_cloud, total_color = incremental_reconstruction()
+        to_ply(total_cloud, total_color, "pointcloud/sfm_output.ply")
 
     def reset(self):
         pass

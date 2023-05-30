@@ -27,7 +27,8 @@ class SfMConfig:
     sift_peak_threshold: float = 0.1
     # See OpenCV doc
     sift_edge_threshold: int = 10
-    
+
+
 def default_config() -> Dict[str, Any]:
     """Return default configuration"""
     return asdict(SfMConfig())

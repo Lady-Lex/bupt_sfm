@@ -5,6 +5,7 @@ import numpy as np
 from typing import Any, List, Tuple, Dict, Optional
 
 from adaptive_sfm.config import default_config
+from adaptive_sfm.context import *
 
 logger: logging.Logger = logging.getLogger(__name__)
 
@@ -107,25 +108,45 @@ def extract_features_sift(
 ) -> Tuple[np.ndarray, np.ndarray]:
     sift_edge_threshold = config["sift_edge_threshold"]
     sift_peak_threshold = float(config["sift_peak_threshold"])
-    try:
+    # SIFT support is in cv2 main from version 4.4.0
+    if OPENCV44 or OPENCV5:
+        # OpenCV versions concerned /** 3.4.11, >= 4.4.0 **/  ==> Sift became free since March 2020
         detector = cv2.SIFT_create(
             edgeThreshold=sift_edge_threshold, contrastThreshold=sift_peak_threshold
         )
-    except AttributeError as ae:
-        if "no attribute 'xfeatures2d'" in str(ae):
-            logger.error(
-                "OpenCV Contrib modules are required to extract SIFT features"
+        descriptor = detector
+    elif OPENCV3 or OPENCV4:
+        try:
+            # OpenCV versions concerned /** 3.2.x, 3.3.x, 3.4.0, 3.4.1, 3.4.2, 3.4.10, 4.3.0, 4.4.0 **/
+            detector = cv2.xfeatures2d.SIFT_create(
+                edgeThreshold=sift_edge_threshold, contrastThreshold=sift_peak_threshold
             )
-        raise
-    descriptor = detector
-
+        except AttributeError as ae:
+            # OpenCV versions concerned /** 3.4.3, 3.4.4, 3.4.5, 3.4.6, 3.4.7, 3.4.8, 3.4.9, 4.0.x, 4.1.x, 4.2.x **/
+            if "no attribute 'xfeatures2d'" in str(ae):
+                logger.error(
+                    "OpenCV Contrib modules are required to extract SIFT features"
+                )
+            raise
+        descriptor = detector
+    else:
+        detector = cv2.FeatureDetector_create("SIFT")
+        descriptor = cv2.DescriptorExtractor_create("SIFT")
+        detector.setDouble("edgeThreshold", sift_edge_threshold)
     while True:
         logger.debug("Computing sift with threshold {0}".format(sift_peak_threshold))
         t = time.time()
-        detector = cv2.SIFT_create(
-            edgeThreshold=sift_edge_threshold, contrastThreshold=sift_peak_threshold
-        )
-
+        # SIFT support is in cv2 main from version 4.4.0
+        if OPENCV44 or OPENCV5:
+            detector = cv2.SIFT_create(
+                edgeThreshold=sift_edge_threshold, contrastThreshold=sift_peak_threshold
+            )
+        elif OPENCV3:
+            detector = cv2.xfeatures2d.SIFT_create(
+                edgeThreshold=sift_edge_threshold, contrastThreshold=sift_peak_threshold
+            )
+        else:
+            detector.setDouble("contrastThreshold", sift_peak_threshold)
         points = detector.detect(image)
         logger.debug("Found {0} points in {1}s".format(len(points), time.time() - t))
         if len(points) < features_count and sift_peak_threshold > 0.0001:
@@ -173,15 +194,23 @@ class SIFTmatcher:
         color1 = np.float32([feature2.colors[m.trainIdx] for m in good])
 
         return FeaturesData(point0, descriptor0, color0), FeaturesData(point1, descriptor1, color1)
-
+    
+    @classmethod
+    def only_matched_index(cls, feature1: FeaturesData, feature2: FeaturesData) -> Tuple[List[int], List[int]]:
+        matches = cls.matcher.knnMatch(feature1.descriptors, feature2.descriptors, k=2)
+        good = []
+        for m, n in matches:
+            if m.distance < 0.7 * n.distance:
+                good.append(m)
+        
+        return [m.queryIdx for m in good], [m.queryIdx for m in good]
+    
     @classmethod
     def search_by_Initialization(cls, image1: np.ndarray, image2: np.ndarray, K: np.ndarray) \
             -> Tuple[FeaturesData, FeaturesData, np.ndarray]:
         feature1, feature2 = cls.match_by_images(image1, image2)
-        print("feature1.points num:", feature1.points.shape[0])
-        print("feature2.points num:", feature2.points.shape[0])
         E, mask = cv2.findEssentialMat(feature1.points, feature2.points, K, method=cv2.RANSAC, prob=0.999, threshold=1,
                                        mask=None)
-        feature1.mask(mask)
-        feature2.mask(mask)
+        feature1.mask(mask.ravel() == 1)
+        feature2.mask(mask.ravel() == 1)
         return feature1, feature2, E

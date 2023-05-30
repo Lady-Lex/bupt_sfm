@@ -13,6 +13,7 @@ def image_stream(queue, imagedir, calib, stride, skip=0):
     fx, fy, cx, cy = calib[:4]
 
     K = np.eye(3)
+    intrinsics = np.eye(3)
     K[0, 0] = fx
     K[0, 2] = cx
     K[1, 1] = fy
@@ -25,9 +26,13 @@ def image_stream(queue, imagedir, calib, stride, skip=0):
         if len(calib) > 4:
             image = cv2.undistort(image, K, calib[4:])
 
-        if 0:
-            image = cv2.resize(image, None, fx=0.5, fy=0.5)
-            intrinsics = np.array([fx / 2, fy / 2, cx / 2, cy / 2])
+        if 1:
+            downscale = 2
+            intrinsics[0, 0] = K[0, 0] / float(downscale)
+            intrinsics[0, 2] = K[0, 2] / float(downscale)
+            intrinsics[1, 1] = K[1, 1] / float(downscale)
+            intrinsics[1, 2] = K[1, 2] / float(downscale)
+            image = img_downscale(image, downscale)
         else:
             intrinsics = K
 
@@ -82,3 +87,12 @@ def video_stream(queue, imagedir, calib, stride, skip=0):
 
     queue.put((-1, image, intrinsics))
     cap.release()
+
+
+def img_downscale(img, downscale):
+    downscale = int(downscale / 2)
+    i = 1
+    while i <= downscale:
+        img = cv2.pyrDown(img)
+        i = i + 1
+    return img

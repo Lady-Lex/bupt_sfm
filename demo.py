@@ -7,9 +7,10 @@ from plyfile import PlyElement, PlyData
 
 from adaptive_sfm.sfm_main import *
 from adaptive_sfm.stream import image_stream, video_stream
-
+from adaptive_sfm.utils import *
 
 debug = True
+
 
 # def run(cfg, network, image_dir, calib, stride=1, skip=0, viz=False, timeit=False, save_reconstruction=False):
 def run(image_dir, calib, stride=1, skip=0):
@@ -23,16 +24,18 @@ def run(image_dir, calib, stride=1, skip=0):
     reader.start()
 
     sfm_runner(queue)
-    
+
     reader.join()
+    
+    path = os.getcwd()
 
 
 if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--image_dir', type=str)
-    parser.add_argument('--calib', type=str)
+    parser.add_argument('--image_dir', type=str, default="../data/fountain-P11/images")
+    parser.add_argument('--calib', type=str, default="../data/fountain-P11/images/intrinsics.txt")
     parser.add_argument('--stride', type=int, default=1)
     parser.add_argument('--skip', type=int, default=0)
     # parser.add_argument('--plot', action="store_true")
