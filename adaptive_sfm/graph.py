@@ -10,7 +10,6 @@ class CoFeaturesNode:
         self.node_id = node_id
         self.image = image
         self.intrinsics = intrinsics
-        self.pose = None
 
 
 class CoFeaturesEdge:
@@ -49,7 +48,7 @@ class CoFeaturesGraph(nx.Graph):
             self._edges[(node_id2, node_id1)] = CoFeaturesEdge(node_id2, node_id1, feature2, feature1, weight, E)
         else:
             raise ValueError("node_id1 should be different from node_id2")
-        
+
         super(CoFeaturesGraph, self).add_edge(node_id1, node_id2, weight=weight)
         if weight > self.max_weight:
             self.max_weight = weight
@@ -75,6 +74,12 @@ class CoFeaturesGraph(nx.Graph):
     def get_edges(self):
         return self._edges
 
+    def get_nodes_num(self):
+        return len(self._nodes)
+
+    def get_edges_num(self):
+        return len(self._edges)
+
     def get_max_weight_edge(self):
         return self.max_weight_edge, self.max_weight
 
@@ -85,7 +90,7 @@ class CoFeaturesGraph(nx.Graph):
             for neighbor_id in self.neighbors(node_id):
                 neighbor_nodes.add(neighbor_id)
                 neighbor_edges.add(self.get_edge(node_id, neighbor_id))
-        
+
         neighbor_edges = list(neighbor_edges)
         if sort:
             neighbor_edges = sorted(neighbor_edges, key=lambda x: x.weight)
@@ -147,7 +152,7 @@ class CovisibilityGraph(nx.Graph):
             self._edges[(node_id2, node_id1)] = CovisibilityEdge(node_id2, node_id1, feature2, feature1, cloud, weight)
         else:
             raise ValueError("node_id1 should be different from node_id2")
-        
+
         super(CovisibilityGraph, self).add_edge(node_id1, node_id2, weight=weight)
         if weight > self.max_weight:
             self.max_weight = weight
@@ -172,7 +177,16 @@ class CovisibilityGraph(nx.Graph):
 
     def get_edges(self):
         return self._edges
-    
+
+    def get_nodes_num(self):
+        return len(self._nodes)
+
+    def get_edges_num(self):
+        return len(self._edges)
+
+    def get_max_weight_edge(self):
+        return self.max_weight_edge, self.max_weight
+
     def all_neighbors(self, node_ids: list, sort=True) -> Tuple[List[int], List[Tuple[int, int]]]:
         neighbor_nodes = set()
         neighbor_edges = set()
@@ -180,7 +194,7 @@ class CovisibilityGraph(nx.Graph):
             for neighbor_id in self.neighbors(node_id):
                 neighbor_nodes.add(neighbor_id)
                 neighbor_edges.add(self.get_edge(node_id, neighbor_id))
-        
+
         neighbor_edges = list(neighbor_edges)
         if sort:
             neighbor_edges = sorted(neighbor_edges, key=lambda x: x.weight)

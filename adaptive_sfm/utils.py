@@ -1,6 +1,21 @@
 import os
 import numpy as np
+from math import sqrt
 from multiprocessing import Pool
+
+
+def T_to_seven_numbers(T):
+    t = T[:3, 3]
+
+    # 计算四元数
+    R = T[:3, :3]
+    w = sqrt(1 + R[0][0] + R[1][1] + R[2][2]) / 2
+    x = (R[2][1] - R[1][2]) / (4 * w)
+    y = (R[0][2] - R[2][0]) / (4 * w)
+    z = (R[1][0] - R[0][1]) / (4 * w)
+    q = np.array([x, y, z, w])
+    pose = np.hstack([t, q])
+    return pose
 
 
 def get_row_index(row, matrix):
@@ -22,9 +37,9 @@ def get_rows_index(matrix1, matrix2):
 
 
 def to_ply(point_cloud, colors, path=os.getcwd(), densify=True):
+    print(f'Saving point cloud to {path}')
     out_points = point_cloud.reshape(-1, 3) * 200
     out_colors = colors.reshape(-1, 3)
-    # out_colors = np.ones_like(out_points) * 255
     verts = np.hstack([out_points, out_colors])
 
     # cleaning point cloud
@@ -52,3 +67,5 @@ def to_ply(point_cloud, colors, path=os.getcwd(), densify=True):
         with open(path, 'w') as f:
             f.write(ply_header % dict(vert_num=len(verts)))
             np.savetxt(f, verts, '%f %f %f %d %d %d')
+
+    print("Done!")

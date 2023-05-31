@@ -29,6 +29,6 @@ class SfMConfig:
     sift_edge_threshold: int = 10
 
 
-def default_config() -> Dict[str, Any]:
+def load_config() -> Dict[str, Any]:
     """Return default configuration"""
     return asdict(SfMConfig())

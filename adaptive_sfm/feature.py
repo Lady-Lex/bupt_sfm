@@ -4,7 +4,7 @@ import logging
 import numpy as np
 from typing import Any, List, Tuple, Dict, Optional
 
-from adaptive_sfm.config import default_config
+from adaptive_sfm.config import load_config
 from adaptive_sfm.context import *
 
 logger: logging.Logger = logging.getLogger(__name__)
@@ -169,7 +169,7 @@ def extract_features_sift(
 
 
 class SIFTmatcher:
-    config: Dict[str, Any] = default_config()
+    config: Dict[str, Any] = load_config()
     matcher = cv2.BFMatcher()
 
     @classmethod

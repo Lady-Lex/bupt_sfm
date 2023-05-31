@@ -4,16 +4,26 @@ import numpy as np
 from .utils import *
 from .feature import *
 from .Initializer import *
+from .CloudView import *
 
 
-def incremental_reconstruction(config: Dict[str, Any] = default_config()):
+def incremental_reconstruction(config=None, fast: bool = False, viz: bool = False):
+    if config is None:
+        config = load_config()
     co_features_graph = Initializer.co_features_graph
     covisibility_graph = Initializer.covisibility_graph
-    node_used = set()
-    total_cloud = np.zeros((1, 3))
-    total_colors = np.zeros((1, 3))
 
-    image_id1, image_id2, cloud, colors = Initializer.Initialize()
+    node_used = set()
+    total_cloud = np.empty((1, 3))
+    total_colors = np.empty((1, 3))
+
+    if fast:
+        image_id1, image_id2, cloud, colors = Initializer.FastInitialize(viz)
+    else:
+        image_id1, image_id2, cloud, colors = Initializer.Initialize(viz)
+
+    CloudViewer = Initializer.CloudViewer
+
     total_cloud = np.vstack((total_cloud, cloud))
     total_colors = np.vstack((total_colors, colors))
     node_used.add(image_id1)
@@ -22,8 +32,8 @@ def incremental_reconstruction(config: Dict[str, Any] = default_config()):
     while len(co_features_graph.get_edges()) > 0:
         neighbor_nodes, neighbor_edges = co_features_graph.all_neighbors(list(node_used))
 
-        # 如果没有邻接边，说明所有的点都已完成重建
-        if len(neighbor_edges) == 0:
+        # 如果没有邻接边，说明没有可再用于增量重建的边了；如果所有节点都已经使用，说明所有节点都已经用于增量重建了
+        if len(neighbor_edges) == 0 and len(node_used) == co_features_graph.get_nodes_num():
             break
 
         # ----------------- 选取已重建对应点最多的边 -----------------
@@ -102,7 +112,6 @@ def incremental_reconstruction(config: Dict[str, Any] = default_config()):
 
         ret, rvecs, t, inliers = cv2.solvePnPRansac(base_cloud, incre_feature.points[point_index],
                                                     incre_cv_node.intrinsics, np.zeros((5, 1)), cv2.SOLVEPNP_EPNP)
-
         R, _ = cv2.Rodrigues(rvecs)
         Rt = np.hstack((R, t))
         P1 = np.matmul(incre_cv_node.intrinsics, Rt)
@@ -114,7 +123,7 @@ def incremental_reconstruction(config: Dict[str, Any] = default_config()):
         cloud = cv2.triangulatePoints(P0, P1, base_feature.points.T, incre_feature.points.T).T
         cloud = cv2.convertPointsFromHomogeneous(cloud)[:, 0, :]
         total_cloud = np.vstack((total_cloud, cloud))
-        total_color = np.vstack((total_colors, incre_feature.colors))
+        total_colors = np.vstack((total_colors, incre_feature.colors))
         covisibility_graph.add_edge(base_id, incre_id, base_feature, incre_feature, cloud, len(cloud))
 
         # 局部BA优化
@@ -123,4 +132,10 @@ def incremental_reconstruction(config: Dict[str, Any] = default_config()):
         node_used.add(image_id2)
         co_features_graph.del_edge(image_id1, image_id2)
 
-        return total_cloud, total_color
+        CloudViewer.update(incre_cv_node.image, Rt, incre_cv_node.intrinsics, total_cloud, total_colors)
+        print("Built cloud based on image {} and image {}".format(base_id, incre_id))
+
+    if CloudViewer.viewer is not None:
+        CloudViewer.viewer.join()
+
+    return total_cloud, total_colors

@@ -12,8 +12,7 @@ from adaptive_sfm.utils import *
 debug = True
 
 
-# def run(cfg, network, image_dir, calib, stride=1, skip=0, viz=False, timeit=False, save_reconstruction=False):
-def run(image_dir, calib, stride=1, skip=0):
+def run(image_dir, calib, stride=1, skip=0, viz=False, ros=False, save_reconstruction=False):
     queue = Queue(maxsize=8)
 
     if os.path.isdir(image_dir):
@@ -23,11 +22,12 @@ def run(image_dir, calib, stride=1, skip=0):
 
     reader.start()
 
-    sfm_runner(queue)
+    sfm = sfm_runner(queue)
+    total_cloud, total_color = sfm(fast=True, viz=viz)
 
     reader.join()
-    
-    path = os.getcwd()
+    if save_reconstruction:
+        to_ply(total_cloud, total_color, "pointcloud/sfm_output.ply")
 
 
 if __name__ == '__main__':
@@ -40,11 +40,12 @@ if __name__ == '__main__':
     parser.add_argument('--skip', type=int, default=0)
     # parser.add_argument('--plot', action="store_true")
     # parser.add_argument('--buffer', type=int, default=2048)
-    # parser.add_argument('--config', default="config/default.yaml")
+    parser.add_argument('--config', default="config/default.yaml")
     # parser.add_argument('--timeit', action='store_true')
-    # parser.add_argument('--viz', action="store_true")
+    parser.add_argument('--viz', action="store_true")
+    parser.add_argument('--ros', action="store_true")
     # parser.add_argument('--plot', action="store_true")
-    # parser.add_argument('--save_reconstruction', action="store_true")
+    parser.add_argument('--save_reconstruction', action="store_true")
     # parser.add_argument('--save_trajectory', action="store_true")
     args = parser.parse_args()
 
@@ -54,10 +55,9 @@ if __name__ == '__main__':
     # print("Running with config...")
     # print(cfg)
 
-    run(args.image_dir, args.calib, args.stride, args.skip)
+    run(args.image_dir, args.calib, args.stride, args.skip, args.viz, args.ros, args.save_reconstruction)
 
-    # pred_traj = run(cfg, args.network, args.imagedir, args.calib, args.stride, args.skip, args.viz, args.timeit, args.save_reconstruction)
-    # name = Path(args.imagedir).stem
+    # name = Path(args.image_dir).stem
     #
     # if args.save_reconstruction:
     #     pred_traj, ply_data = pred_traj
