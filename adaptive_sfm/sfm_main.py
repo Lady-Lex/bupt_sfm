@@ -1,18 +1,25 @@
 import sys
 import copy
 from tqdm import tqdm
+from typing import Any, Dict, Tuple
+from multiprocessing import Queue
 
 from .utils import *
 from .feature import *
+from .config import *
 from .reconstruction import incremental_reconstruction
 from .graph import _co_features_graph, _covisibility_graph
+from .CloudView import CloudView
 
 
 class sfm_runner(object):
-    def __init__(self, queue):
+    def __init__(self, queue: Queue, cfg: Dict[str, Any] = None, viz: bool = False) -> None:
         self.queue = queue
+        if cfg is None:
+            self.cfg = load_config()
+        self.cloud_viewer = CloudView(ht=self.cfg["image_height"], wd=self.cfg["image_width"], viz=viz)
 
-    def __call__(self, fast=False, viz=False):
+    def __call__(self, fast: bool = False, save_reconstruction: bool = True) -> Tuple[np.ndarray, np.ndarray]:
         while True:
             (t, image, intrinsics) = self.queue.get()
             if t < 0:
@@ -34,7 +41,7 @@ class sfm_runner(object):
                         feature1, feature2, E = SIFTmatcher.search_by_Initialization(image1.image, image2.image, intrinsics)
                         weight = len(feature1.points)
                         # 参数：如果共视特征点数量小于100，则跳过
-                        if weight < 100:
+                        if weight < self.cfg["feature_matched_min"]:
                             continue
                         # 向共特征点图中添加边
                         _co_features_graph.add_edge(node_id1, node_id2, feature1, feature2, weight, E)
@@ -48,19 +55,26 @@ class sfm_runner(object):
                     feature1, feature2, E = SIFTmatcher.search_by_Initialization(image1.image, image2.image, intrinsics)
                     weight = len(feature1.points)
                     # 参数：如果共视特征点数量小于100，则跳过
-                    if weight < 100:
+                    if weight < self.cfg["feature_matched_min"]:
                         continue
                     # 向共特征点图中添加边
                     _co_features_graph.add_edge(node_id1, node_id2, feature1, feature2, weight, E)
 
         # 可视化共特征点图
         _co_features_graph.draw()
-        
+
         # 增量式重建
-        total_cloud, total_color = incremental_reconstruction(fast=False, viz=viz)
+        total_cloud, total_color = incremental_reconstruction(cloud_viewer=self.cloud_viewer, cfg=self.cfg, fast=fast,
+                                                              ba=False)
 
         # 可视化共视关系图
         _covisibility_graph.draw()
+
+        if save_reconstruction:
+            to_ply(total_cloud, total_color, "pointcloud/sfm_output.ply")
+
+        if self.cloud_viewer.viewer is not None:
+            self.cloud_viewer.viewer.join()
 
         return total_cloud, total_color
 

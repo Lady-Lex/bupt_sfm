@@ -6,7 +6,18 @@ from typing import Any, Dict, IO, Union
 @dataclass
 class SfMConfig:
     ##################################
-    # Params for features
+    # Params for image
+    ##################################
+    image_height: int = 1024
+    image_width: int = 1536
+
+    ##################################
+    # Params for features matching
+    ##################################
+    feature_matched_min: int = 100
+
+    ##################################
+    # Params for features detection
     ##################################
     # If true, apply square root mapping to features
     feature_root: bool = True

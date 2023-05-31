@@ -5,8 +5,10 @@ from multiprocessing import Process, Queue
 from pathlib import Path
 from itertools import chain
 
+from .config import *
 
-def image_stream(queue, imagedir, calib, stride, skip=0):
+
+def image_stream(queue, image_dir, calib, stride, skip=0):
     """ image generator """
 
     calib = np.loadtxt(calib, delimiter=" ")
@@ -20,7 +22,7 @@ def image_stream(queue, imagedir, calib, stride, skip=0):
     K[1, 2] = cy
 
     img_exts = ["*.png", "*.jpeg", "*.jpg"]
-    image_list = sorted(chain.from_iterable(Path(imagedir).glob(e) for e in img_exts))[skip::stride]
+    image_list = sorted(chain.from_iterable(Path(image_dir).glob(e) for e in img_exts))[skip::stride]
     for t, imfile in enumerate(image_list):
         image = cv2.imread(str(imfile))
         if len(calib) > 4:

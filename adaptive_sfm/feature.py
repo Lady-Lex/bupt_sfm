@@ -1,13 +1,10 @@
 import cv2
 import time
-import logging
 import numpy as np
 from typing import Any, List, Tuple, Dict, Optional
 
 from adaptive_sfm.config import load_config
 from adaptive_sfm.context import *
-
-logger: logging.Logger = logging.getLogger(__name__)
 
 
 class FeaturesData:
@@ -123,18 +120,13 @@ def extract_features_sift(
             )
         except AttributeError as ae:
             # OpenCV versions concerned /** 3.4.3, 3.4.4, 3.4.5, 3.4.6, 3.4.7, 3.4.8, 3.4.9, 4.0.x, 4.1.x, 4.2.x **/
-            if "no attribute 'xfeatures2d'" in str(ae):
-                logger.error(
-                    "OpenCV Contrib modules are required to extract SIFT features"
-                )
-            raise
+            raise ae
         descriptor = detector
     else:
         detector = cv2.FeatureDetector_create("SIFT")
         descriptor = cv2.DescriptorExtractor_create("SIFT")
         detector.setDouble("edgeThreshold", sift_edge_threshold)
     while True:
-        logger.debug("Computing sift with threshold {0}".format(sift_peak_threshold))
         t = time.time()
         # SIFT support is in cv2 main from version 4.4.0
         if OPENCV44 or OPENCV5:
@@ -148,13 +140,11 @@ def extract_features_sift(
         else:
             detector.setDouble("contrastThreshold", sift_peak_threshold)
         points = detector.detect(image)
-        logger.debug("Found {0} points in {1}s".format(len(points), time.time() - t))
         if len(points) < features_count and sift_peak_threshold > 0.0001:
             sift_peak_threshold = (sift_peak_threshold * 2) / 3
-            logger.debug("reducing threshold")
         else:
-            logger.debug("done")
             break
+
     points, desc = descriptor.compute(image, points)
 
     if desc is not None:

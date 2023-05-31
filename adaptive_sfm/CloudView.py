@@ -1,4 +1,5 @@
 import numpy as np
+from typing import Any, Dict
 
 try:
     import torch
@@ -8,13 +9,17 @@ except ModuleNotFoundError as e:
     use_dpviewer = False
 
 from .utils import T_to_seven_numbers
+from .config import load_config
 
 
 class CloudView:
-    def __init__(self, cfg=None, ht=480, wd=640, viz=True):
+    def __init__(self, cfg: Dict[str, Any] = None, ht: int = 480, wd: int = 640, viz: bool = True):
         if not use_dpviewer:
             self.viewer = None
             return
+
+        if cfg is None:
+            cfg = load_config()
 
         self.cfg = cfg
 
@@ -22,8 +27,8 @@ class CloudView:
         self.m = 0  # number of patches
         # self.M = self.cfg.PATCHES_PER_FRAME
         # self.N = self.cfg.BUFFER_SIZE
-        self.M = 1000
         self.N = 50
+        self.M = 1000
 
         self.ht = ht  # image height
         self.wd = wd  # image width
@@ -51,7 +56,7 @@ class CloudView:
             self.colors_,
             self.intrinsics_)
 
-    def update(self, image, pose, intrinsics, points, colors):
+    def update(self, image: np.ndarray, pose: np.ndarray, intrinsics: np.ndarray, points: np.ndarray, colors: np.ndarray):
         if not use_dpviewer:
             return
 

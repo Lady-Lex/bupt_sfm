@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+from typing import Any, Dict
 
 from .feature import *
 from .graph import _co_features_graph, _covisibility_graph, CoFeaturesGraph, CovisibilityGraph
@@ -7,14 +8,16 @@ from .CloudView import *
 
 
 class Initializer:
+    cfg: Dict[str, Any] = load_config()
     co_features_graph: CoFeaturesGraph = _co_features_graph
     covisibility_graph: CovisibilityGraph = _covisibility_graph
     CloudViewer: CloudView
 
     @classmethod
-    def Initialize(cls, viz: bool = False):
+    def Initialize(cls, cloud_viewer: CloudView):
         co_features_graph = cls.co_features_graph
         covisibility_graph = cls.covisibility_graph
+        cls.CloudViewer = cloud_viewer
 
         # 1. 选取最大权重的边
         max_weight_edge, max_weight = co_features_graph.get_max_weight_edge()
@@ -28,8 +31,6 @@ class Initializer:
         node_2 = co_features_graph.get_node(max_weight_edge.node_id2)
 
         assert (node_1.intrinsics == node_2.intrinsics).all()
-
-        cls.CloudViewer = CloudView(ht=node_1.image.shape[0], wd=node_2.image.shape[1], viz=viz)
 
         K = node_1.intrinsics
         # 2. 初始三角化
@@ -58,14 +59,15 @@ class Initializer:
         cls.CloudViewer.update(node_1.image, I0, node_1.intrinsics, cloud, colors)
         cls.CloudViewer.update(node_2.image, Rt, node_2.intrinsics, cloud, colors)
 
-        print("Initialization finished! Built cloud based on image {} and image {}".format(max_weight_edge.node_id1,
+        print("Initialization finished! Built cloud based on image {} and image {}.".format(max_weight_edge.node_id1,
                                                                                            max_weight_edge.node_id2))
         return max_weight_edge.node_id1, max_weight_edge.node_id2, cloud, colors
 
     @classmethod
-    def FastInitialize(cls, viz: bool = False):
+    def FastInitialize(cls, cloud_viewer: CloudView):
         co_features_graph = cls.co_features_graph
         covisibility_graph = cls.covisibility_graph
+        cls.CloudViewer = cloud_viewer
 
         node_id1 = 0
         node_id2 = 1
@@ -82,8 +84,6 @@ class Initializer:
         node_2 = co_features_graph.get_node(1)
 
         assert (node_1.intrinsics == node_2.intrinsics).all()
-
-        cls.CloudViewer = CloudView(ht=node_1.image.shape[0], wd=node_2.image.shape[1], viz=viz)
 
         K = node_1.intrinsics
         I0 = np.array([[1, 0, 0, 0],
@@ -111,6 +111,6 @@ class Initializer:
         cls.CloudViewer.update(node_1.image, I0, node_1.intrinsics, cloud, colors)
         cls.CloudViewer.update(node_2.image, Rt, node_2.intrinsics, cloud, colors)
 
-        print("Initialization finished! Built cloud based on image {} and image {}".format(first_edge.node_id1,
+        print("Initialization finished! Built cloud based on image {} and image {}.".format(first_edge.node_id1,
                                                                                            first_edge.node_id2))
         return first_edge.node_id1, first_edge.node_id2, cloud, colors
