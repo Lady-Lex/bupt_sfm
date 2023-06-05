@@ -30,7 +30,7 @@ def run(image_dir: str, calib: str, stride: int = 1, skip: int = 0, viz: bool = 
     reader.start()
 
     sfm = sfm_runner(queue, viz=viz)
-    total_cloud, total_color = sfm(fast=True, save_reconstruction=save_reconstruction)
+    total_cloud, total_color = sfm(fast=False, save_reconstruction=save_reconstruction)
 
     reader.join()
 
@@ -39,8 +39,8 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--image_dir', type=str, default="../data/fountain-P11/images")
-    parser.add_argument('--calib', type=str, default="../data/fountain-P11/images/intrinsics.txt")
+    parser.add_argument('--image_dir', type=str, default="../data/castle-P19/images")
+    parser.add_argument('--calib', type=str, default="../data/castle-P19/images/intrinsics.txt")
     parser.add_argument('--stride', type=int, default=1)
     parser.add_argument('--skip', type=int, default=0)
     # parser.add_argument('--plot', action="store_true")

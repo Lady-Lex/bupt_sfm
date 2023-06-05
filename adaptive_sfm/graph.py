@@ -1,19 +1,22 @@
 import networkx as nx
-import matplotlib.pyplot as plt  # 导入模块函数
+import matplotlib.pyplot as plt
 from typing import Any, List, Tuple, Dict, Optional
+
+import numpy as np
 
 from .feature import *
 
 
 class CoFeaturesNode:
-    def __init__(self, node_id, image, intrinsics):
+    def __init__(self, node_id: int, image: np.ndarray, intrinsics: np.ndarray, all_features: FeaturesData):
         self.node_id = node_id
         self.image = image
         self.intrinsics = intrinsics
+        self.all_features = all_features
 
 
 class CoFeaturesEdge:
-    def __init__(self, node_id1, node_id2, feature1, feature2, weight, E):
+    def __init__(self, node_id1: int, node_id2: int, feature1: MatchedFeatures, feature2: MatchedFeatures, weight: int, E: np.ndarray):
         self.node_id1 = node_id1
         self.node_id2 = node_id2
         self.weight = weight
@@ -37,27 +40,30 @@ class CoFeaturesGraph(nx.Graph):
         self.max_weight_edge = None
         self.clear()
 
-    def add_node(self, node_id, image, intrinsics):
-        self._nodes[node_id] = CoFeaturesNode(node_id, image, intrinsics)
+    def add_node(self, node_id: int, image: np.ndarray, intrinsics: np.ndarray, all_features: FeaturesData):
+        self._nodes[node_id] = CoFeaturesNode(node_id, image, intrinsics, all_features)
         super(CoFeaturesGraph, self).add_node(node_id)
 
-    def add_edge(self, node_id1, node_id2, feature1, feature2, weight, E):
+    def add_edge(self, node_id1: int, node_id2: int, feature1: MatchedFeatures, feature2: MatchedFeatures, weight: int, E: np.ndarray):
+        temp_edge = None
         if node_id1 < node_id2:
             self._edges[(node_id1, node_id2)] = CoFeaturesEdge(node_id1, node_id2, feature1, feature2, weight, E)
+            temp_edge = self._edges[(node_id1, node_id2)]
         elif node_id1 > node_id2:
             self._edges[(node_id2, node_id1)] = CoFeaturesEdge(node_id2, node_id1, feature2, feature1, weight, E)
+            temp_edge = self._edges[(node_id2, node_id1)]
         else:
             raise ValueError("node_id1 should be different from node_id2")
 
         super(CoFeaturesGraph, self).add_edge(node_id1, node_id2, weight=weight)
         if weight > self.max_weight:
             self.max_weight = weight
-            self.max_weight_edge = self._edges[(node_id1, node_id2)]
+            self.max_weight_edge = temp_edge
 
-    def get_node(self, node_id):
+    def get_node(self, node_id: int):
         return self._nodes.get(node_id, None)
 
-    def get_edge(self, node_id1, node_id2):
+    def get_edge(self, node_id1: int, node_id2: int):
         if node_id1 > node_id2:
             temp_node_id1 = node_id2
             temp_node_id2 = node_id1
@@ -109,15 +115,16 @@ class CoFeaturesGraph(nx.Graph):
 
 
 class CovisibilityNode:
-    def __init__(self, node_id, image, intrinsics):
+    def __init__(self, node_id: int, image: np.ndarray, intrinsics: np.ndarray, all_features: FeaturesData):
         self.node_id = node_id
         self.image = image
         self.intrinsics = intrinsics
+        self.all_features = all_features
         self.pose = None
 
 
 class CovisibilityEdge:
-    def __init__(self, node_id1, node_id2, feature1, feature2, cloud, weight):
+    def __init__(self, node_id1: int, node_id2: int, feature1: MatchedFeatures, feature2: MatchedFeatures, cloud: np.ndarray, weight: int):
         self.node_id1 = node_id1
         self.node_id2 = node_id2
         self.feature1 = feature1
@@ -141,22 +148,25 @@ class CovisibilityGraph(nx.Graph):
         self.max_weight_edge = None
         self.clear()
 
-    def add_node(self, node_id, image, intrinsics):
-        self._nodes[node_id] = CovisibilityNode(node_id, image, intrinsics)
+    def add_node(self, node_id: int, image: np.ndarray, intrinsics: np.ndarray, all_features: FeaturesData):
+        self._nodes[node_id] = CovisibilityNode(node_id, image, intrinsics, all_features)
         super(CovisibilityGraph, self).add_node(node_id)
 
-    def add_edge(self, node_id1, node_id2, feature1, feature2, cloud, weight):
+    def add_edge(self, node_id1: int, node_id2: int, feature1: MatchedFeatures, feature2: MatchedFeatures, cloud: np.ndarray, weight: int):
+        temp_edge = None
         if node_id1 < node_id2:
             self._edges[(node_id1, node_id2)] = CovisibilityEdge(node_id1, node_id2, feature1, feature2, cloud, weight)
+            temp_edge = self._edges[(node_id1, node_id2)]
         elif node_id1 > node_id2:
             self._edges[(node_id2, node_id1)] = CovisibilityEdge(node_id2, node_id1, feature2, feature1, cloud, weight)
+            temp_edge = self._edges[(node_id2, node_id1)]
         else:
             raise ValueError("node_id1 should be different from node_id2")
 
         super(CovisibilityGraph, self).add_edge(node_id1, node_id2, weight=weight)
         if weight > self.max_weight:
             self.max_weight = weight
-            self.max_weight_edge = self._edges[(node_id1, node_id2)]
+            self.max_weight_edge = temp_edge
 
     def get_node(self, node_id):
         return self._nodes.get(node_id, None)

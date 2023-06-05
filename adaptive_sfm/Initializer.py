@@ -60,7 +60,7 @@ class Initializer:
         cls.CloudViewer.update(node_2.image, Rt, node_2.intrinsics, cloud, colors)
 
         print("Initialization finished! Built cloud based on image {} and image {}.".format(max_weight_edge.node_id1,
-                                                                                           max_weight_edge.node_id2))
+                                                                                            max_weight_edge.node_id2))
         return max_weight_edge.node_id1, max_weight_edge.node_id2, cloud, colors
 
     @classmethod
@@ -112,5 +112,5 @@ class Initializer:
         cls.CloudViewer.update(node_2.image, Rt, node_2.intrinsics, cloud, colors)
 
         print("Initialization finished! Built cloud based on image {} and image {}.".format(first_edge.node_id1,
-                                                                                           first_edge.node_id2))
+                                                                                            first_edge.node_id2))
         return first_edge.node_id1, first_edge.node_id2, cloud, colors

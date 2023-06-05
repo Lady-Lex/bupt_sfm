@@ -8,10 +8,6 @@ from adaptive_sfm.context import *
 
 
 class FeaturesData:
-    points: np.ndarray
-    descriptors: Optional[np.ndarray]
-    colors: np.ndarray
-
     def __init__(self, points: np.ndarray, descriptors: Optional[np.ndarray], colors: np.ndarray):
         self.points = points
         self.descriptors = descriptors
@@ -22,6 +18,20 @@ class FeaturesData:
             self.points[mask],
             self.descriptors[mask] if self.descriptors is not None else None,
             self.colors[mask]
+        )
+
+
+class MatchedFeatures(FeaturesData):
+    def __init__(self, points: np.ndarray, descriptors: Optional[np.ndarray], colors: np.ndarray, index: List[int]):
+        super().__init__(points, descriptors, colors)
+        self.index = index
+
+    def mask(self, mask: np.ndarray) -> "MatchedFeatures":
+        return MatchedFeatures(
+            self.points[mask],
+            self.descriptors[mask] if self.descriptors is not None else None,
+            self.colors[mask],
+            [self.index[i] for i in np.where(mask)[0]]
         )
 
 
@@ -163,13 +173,13 @@ class SIFTmatcher:
     matcher = cv2.BFMatcher()
 
     @classmethod
-    def match_by_images(cls, image1: np.ndarray, image2: np.ndarray) -> Tuple[FeaturesData, FeaturesData]:
+    def match_by_images(cls, image1: np.ndarray, image2: np.ndarray) -> Tuple[MatchedFeatures, MatchedFeatures]:
         feature1 = extract_features(image1, cls.config, False)
         feature2 = extract_features(image2, cls.config, False)
         return cls.match_by_features(feature1, feature2)
 
     @classmethod
-    def match_by_features(cls, feature1: FeaturesData, feature2: FeaturesData) -> Tuple[FeaturesData, FeaturesData]:
+    def match_by_features(cls, feature1: FeaturesData, feature2: FeaturesData) -> Tuple[MatchedFeatures, MatchedFeatures]:
         matches = cls.matcher.knnMatch(feature1.descriptors, feature2.descriptors, k=2)
         good = []
         for m, n in matches:
@@ -183,24 +193,16 @@ class SIFTmatcher:
         color0 = np.float32([feature1.colors[m.queryIdx] for m in good])
         color1 = np.float32([feature2.colors[m.trainIdx] for m in good])
 
-        return FeaturesData(point0, descriptor0, color0), FeaturesData(point1, descriptor1, color1)
-    
+        return MatchedFeatures(point0, descriptor0, color0, [m.queryIdx for m in good]), \
+            MatchedFeatures(point1, descriptor1, color1, [m.trainIdx for m in good])
+
     @classmethod
-    def only_matched_index(cls, feature1: FeaturesData, feature2: FeaturesData) -> Tuple[List[int], List[int]]:
-        matches = cls.matcher.knnMatch(feature1.descriptors, feature2.descriptors, k=2)
-        good = []
-        for m, n in matches:
-            if m.distance < 0.7 * n.distance:
-                good.append(m)
-        
-        return [m.queryIdx for m in good], [m.queryIdx for m in good]
-    
-    @classmethod
-    def search_by_Initialization(cls, image1: np.ndarray, image2: np.ndarray, K: np.ndarray) \
-            -> Tuple[FeaturesData, FeaturesData, np.ndarray]:
-        feature1, feature2 = cls.match_by_images(image1, image2)
-        E, mask = cv2.findEssentialMat(feature1.points, feature2.points, K, method=cv2.RANSAC, prob=0.999, threshold=1,
+    def search_by_Initialization(cls, feature1: FeaturesData, feature2: FeaturesData, K: np.ndarray) \
+            -> Tuple[MatchedFeatures, MatchedFeatures, np.ndarray]:
+        matched_feature1, matched_feature2 = cls.match_by_features(feature1, feature2)
+        E, mask = cv2.findEssentialMat(matched_feature1.points, matched_feature2.points, K, method=cv2.RANSAC,
+                                       prob=0.999, threshold=1,
                                        mask=None)
-        feature1.mask(mask.ravel() == 1)
-        feature2.mask(mask.ravel() == 1)
-        return feature1, feature2, E
+        matched_feature1.mask(mask.ravel() == 1)
+        matched_feature2.mask(mask.ravel() == 1)
+        return matched_feature1, matched_feature2, E
