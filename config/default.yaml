@@ -1,0 +1,80 @@
+##################################
+# Params for running
+##################################
+# image directory or ros image topic
+running_image_dir: ./data/Herz-Jesus-P8/images
+# camera intrinsics file or ros camera info topic
+running_calib: ./data/Herz-Jesus-P8/images/intrinsics.txt
+# If set to n, for every n pictures, only one will be used for sfm
+running_stride: 1
+# if set to n, The first n pictures will be skipped, not used for ros
+running_skip: 0
+# if True, pangolin viewer will be activated if installed.
+running_viz: True
+# if True, ros node will be activated.
+running_ros: False
+# if True, robuster but slower reconstruction will be activated.
+running_robust: True
+# if True, reconstruction will be saved to save_dir as ply file.
+running_save_reconstruction: True
+
+##################################
+# Params for image
+##################################
+# image height
+image_height: 2048
+# image width
+image_width: 3072
+# if set to n, the image will be resized to (image_height/2**n, image_width/2**n)
+image_downscale: 2
+
+##################################
+# Params for features matching
+##################################
+# If set to n, image pair with less than n matched features will not be used for reconstruction
+feature_matched_min: 100
+# If set to a, the closest distance must be less than a*d, where d is the second closest distance
+feature_distance_ratio: 0.7
+
+##################################
+# Params for features detection
+##################################
+# If true, apply square root mapping to features
+feature_root: True
+# If fewer frames are detected, sift_peak_threshold/surf_hessian_threshold is reduced.
+feature_min_frames: 4000
+# Same as above but for panorama images
+feature_min_frames_panorama: 16000
+# Resize the image if its size is larger than specified. Set to -1 for original size
+feature_process_size: 2048
+# Same as above but for panorama images
+feature_process_size_panorama: 4096
+# This param has been deprecated
+feature_use_adaptive_suppression: False
+
+##################################
+# Params for SIFT
+##################################
+# Smaller value -> more features
+sift_peak_threshold: 0.1
+# See OpenCV doc
+sift_edge_threshold: 10
+
+##################################
+# Params for dpviewer
+##################################
+# This param has been deprecated
+dpvierwer_activated: True
+
+##################################
+# Params for BA
+##################################
+BA_activated: False
+
+##################################
+# Params for save
+##################################
+# ply file will be saved to this directory
+save_directory: ../pointcloud
+# If set to x, only points with distance to origin point less than x will be saved
+save_distance_thresh: 600.0

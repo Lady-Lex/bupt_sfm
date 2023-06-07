@@ -1,0 +1,63 @@
+##################################
+# Params for running
+##################################
+running_image_dir: ./data/Herz-Jesus-P25/images
+running_calib: ./data/Herz-Jesus-P25/images/intrinsics.txt
+running_stride: 1
+running_skip: 0
+running_viz: False
+running_ros: False
+running_robust: True
+running_save_reconstruction: True
+
+##################################
+# Params for image
+##################################
+image_height: 2048
+image_width: 3072
+image_downscale: 2
+
+##################################
+# Params for features matching
+##################################
+feature_matched_min: 100
+feature_distance_ratio: 0.7
+
+##################################
+# Params for features detection
+##################################
+# If true, apply square root mapping to features
+feature_root: True
+# If fewer frames are detected, sift_peak_threshold/surf_hessian_threshold is reduced.
+feature_min_frames: 4000
+# Same as above but for panorama images
+feature_min_frames_panorama: 16000
+# Resize the image if its size is larger than specified. Set to -1 for original size
+feature_process_size: 2048
+# Same as above but for panorama images
+feature_process_size_panorama: 4096
+feature_use_adaptive_suppression: False
+
+##################################
+# Params for SIFT
+##################################
+# Smaller value -> more features
+sift_peak_threshold: 0.1
+# See OpenCV doc
+sift_edge_threshold: 10
+
+##################################
+# Params for dpviewer
+##################################
+dpvierwer_activated: True
+
+##################################
+# Params for BA
+##################################
+BA_activated: False
+
+##################################
+# Params for save
+##################################
+save_directory: ../pointcloud
+save_distance_thresh: 600.0
